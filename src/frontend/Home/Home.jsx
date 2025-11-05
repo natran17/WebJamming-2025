@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import NavBar from '../Navbar/NavBar';
 import './Home.css'
 
 
@@ -7,31 +8,9 @@ const Home = () => {
 
     return (
         <div className="page-wrapper">
-        {/* Navigation */}
-        <nav className="navbar">
-          <div className="navbar-container">
-            <a href="#" className="navbar-logo">Zot Exercise</a>
-            
-            <div className={`navbar-menu ${menuOpen ? 'open' : ''}`}>
-              <a href="#exercise" className="btn btn-donate">Exercise</a>
-              <a href="#nutrition" className="btn btn-donate">Nutrition</a>
-              <a href="#aboutyou" className="btn btn-donate">About you</a>
-            </div>
-  
-            <button 
-              className="navbar-toggle"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-          </div>
-        </nav>
-        <div className='home'>
-            <h2>hello does this shit even work</h2>
+          <NavBar/>
         
+        <div className='home'>
         <header className="hero-section">
           <div className="hero-background">
             <img 
@@ -42,11 +21,9 @@ const Home = () => {
             <div className="hero-overlay"></div>
           
           
-          <div>
-            <h1 className="hero-title">Zot Better!</h1>
-            <p className="hero-description">
-              Lets zot better! Be healther and more fit! Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah Blah
-            </p>
+          <div className='hero-title-wrapper'>
+            <h1 className="hero-title">BE Better!</h1>
+            <button className='starting-btn'>Get started!</button>
             </div>
           </div>
         </header>

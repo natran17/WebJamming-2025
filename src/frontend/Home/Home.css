@@ -1,145 +1,25 @@
 /* Reset and Base Styles */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  .page-wrapper {
-    min-height: 100vh;
-    background-color: #f5f5f5;
-  }
-  
-  /* Navigation Bar */
-  .navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    padding: 1rem 0;
-  }
-  
-  .navbar-container {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding-left: 5%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .navbar-logo {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #000;
-    text-decoration: none;
-    transition: opacity 0.3s ease;
-  }
-  
-  .navbar-logo:hover {
-    opacity: 0.8;
-  }
-  
-  .navbar-menu {
-    display: flex;
-    align-items: center;
-    gap: 2.5rem;
-  }
-  
-  .navbar-link {
-    color: #333;
-    text-decoration: none;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: color 0.3s ease;
-    position: relative;
-  }
-  
-  .navbar-link:hover {
-    color: #000;
-  }
-  
-  .navbar-link::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background-color: #ff7a59;
-    transition: width 0.3s ease;
-  }
-  
-  .navbar-link:hover::after {
-    width: 100%;
-  }
-  
-  .home{
-    position: absolute;
-    background-color: white;
-    width: 100vw;
-  }
-  /* Button Styles */
-  .btn {
-    padding: 12px 28px;
-    border-radius: 50px;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-    display: inline-block;
-  }
-  
-  .btn-donate {
-    background-color: #0064A4;
-    color: #fff;
-  }
-  
-  .btn-donate:hover {
-    background-color: #FFD200;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 122, 89, 0.3);
-  }
-  
-  /* Mobile Toggle Button */
-  .navbar-toggle {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-  }
-  
-  .navbar-toggle span {
-    width: 25px;
-    height: 3px;
-    background-color: #333;
-    border-radius: 2px;
-    transition: all 0.3s ease;
-  }
-  
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;}
+
+
+.page-wrapper{
+  background-color: #0064A4;
+  height: 100vh;
+}
+
   /* Hero Section */
   .hero-section {
+    /* flex: 1; */
     position: relative;
-    min-height: 100vh;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 120px 5% 80px;
-    margin-top: 80px;
+    /* margin-top:; */
     overflow: hidden;
     border-radius: 24px;
     margin-left: 5%;
@@ -153,6 +33,7 @@
     width: 100%;
     height: 100%;
     z-index: 1;
+    align-content: center;
   }
   
   .hero-image {
@@ -175,29 +56,51 @@
   }
 
   
+
+  .hero-title-wrapper {
+    display: flex;
+    align-items: center;       /* vertical centering */
+    justify-content: center;   /* horizontal centering */
+    height: 100%;              /* fill the hero background */
+    width: 100%;               /* fill width */
+    position: absolute;        /* over the hero background */
+    top: 0;
+    left: 0;
+    pointer-events: none;      /* allows clicks to pass through if needed */
+    z-index: 2;                /* above image and overlay */
+    flex-direction: column;
+    gap: 2rem; 
+  }
+
   .hero-title {
     font-size: clamp(4rem, 12vw, 10rem);
     font-weight: 700;
     line-height: 0.9;
-    color: #009dff;
+    color: #ffffff;
     margin: 0;
     letter-spacing: -0.02em;
-    position: absolute;
-    left: 15%;
-    bottom: 20%;
-    right: 50%;
+    text-align: center;
+    top: 10%;
   }
-  
-  .hero-description {
-    font-size: clamp(1.125rem, 2vw, 1.5rem);
-    font-weight: 600;
-    line-height: 1.6;
-    color: #fff;
-    margin: 0;
-    position: absolute;
-    bottom: 20%;
-    right: 15%;
-    left: 56%;
+
+ .starting-btn {
+    padding: 0.75rem 2rem;           /* vertical and horizontal padding */
+    font-size: clamp(1rem, 2vw, 1.5rem); /* responsive font size */
+    border: none;                     /* remove default border */
+    border-radius: 50px;              /* fully rounded button */
+    background-color: #007bff;        /* primary color */
+    color: #ffffff;                   /* text color */
+    cursor: pointer;                  /* pointer on hover */
+    transition: all 0.3s ease;        /* smooth hover effect */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* subtle shadow */
+    margin-top: 30px;
+  }
+
+  .starting-btn:hover {
+    background-color: #0056b3;       /* darker blue on hover */
+    transform: translateY(-2px);     /* slight lift effect */
+    box-shadow: 0 6px 10px rgba(0,0,0,0.15); /* bigger shadow */
+    cursor: pointer;
   }
   
   /* Responsive Design */
