@@ -42,8 +42,14 @@ const NutritionPlanner = () => {
   });
   const [chat, setChat] = useState([{ role:'assistant', text: 'Hi! Tell me what you feel like eating, your goal, or where you are, and I\'ll suggest meals.' }]);
   const [chatInput, setChatInput] = useState('');
-  const [days, setDays] = useState(()=> JSON.parse(JSON.stringify(weekDays)));
+  const [days, setDays] = useState(()=> {
+    const base = JSON.parse(JSON.stringify(weekDays||[]));
+    // ensure breakfast exists for all days
+    base.forEach(d=>{ if(!d.breakfast){ d.breakfast = { name:'Breakfast', items:[] }; } });
+    return base;
+  });
   const [doneMap, setDoneMap] = useState(()=>{ try{return JSON.parse(localStorage.getItem('nutritionDone')||'{}');}catch{return {}}});
+  const [mealDoneMap, setMealDoneMap] = useState(()=>{ try{return JSON.parse(localStorage.getItem('nutritionMealDone')||'{}');}catch{return {}}});
   const [mealPrep, setMealPrep] = useState([]); // detailed multi-day plan
 
 
@@ -108,6 +114,15 @@ const NutritionPlanner = () => {
     next[idx] = !next[idx];
     setDoneMap(next);
     try{ localStorage.setItem('nutritionDone', JSON.stringify(next)); }catch{}
+  }
+
+  function toggleMealDone(dayIdx, mealKey){
+    const next = { ...(mealDoneMap||{}) };
+    const perDay = { ...(next[dayIdx]||{}) };
+    perDay[mealKey] = !perDay[mealKey];
+    next[dayIdx] = perDay;
+    setMealDoneMap(next);
+    try{ localStorage.setItem('nutritionMealDone', JSON.stringify(next)); }catch{}
   }
 
   function generateMealPrep(){
@@ -218,6 +233,7 @@ const NutritionPlanner = () => {
 
               <div className="quiz-section">
                 <label className="quiz-label">Preferred cuisines</label>
+                <p className="quiz-help">Pick as many as you like. We’ll use these to suggest meals.</p>
                 <div className="quiz-grid">
                   {CUISINES.map(c => (
                     <label key={c.key} className="quiz-checkbox">
@@ -230,6 +246,7 @@ const NutritionPlanner = () => {
 
               <div className="quiz-section">
                 <label className="quiz-label">Dietary restrictions</label>
+                <p className="quiz-help">We’ll avoid suggesting foods that don’t fit.</p>
                 <div className="quiz-grid">
                   {RESTRICTIONS.map(r => (
                     <label key={r.key} className="quiz-checkbox">
@@ -242,6 +259,7 @@ const NutritionPlanner = () => {
 
               <div className="quiz-section">
                 <label className="quiz-label">About you</label>
+                <p className="quiz-help">We use this to estimate your daily energy needs.</p>
                 <div className="quiz-grid">
                   <select className="quiz-select" value={quiz.sex} onChange={e=>setQuiz(q=>({...q, sex:e.target.value}))}>
                     <option value="male">Male</option>
@@ -255,6 +273,7 @@ const NutritionPlanner = () => {
 
               <div className="quiz-section">
                 <label className="quiz-label">Activity level</label>
+                <p className="quiz-help">Choose the option that best matches an average week.</p>
                 <select className="quiz-select" value={quiz.activity} onChange={e=>setQuiz(q=>({...q, activity:e.target.value}))}>
                   <option value="sedentary">Sedentary (little or no exercise)</option>
                   <option value="light">Light (1-3 days/week)</option>
@@ -291,7 +310,7 @@ const NutritionPlanner = () => {
         </div>
 
         {/* Calorie target + progress (for today) */}
-        <CalorieSummary days={days} />
+        <CalorieSummary days={days} mealDoneMap={mealDoneMap} />
 
         <div className="nutrition-layout">
           <div className="nutrition-main">
@@ -362,6 +381,11 @@ const NutritionPlanner = () => {
                                 {calculateMealCalories(day.breakfast||{items:[]})} cal
                               </p>
                             </div>
+                            <button
+                              type="button"
+                              className={`day-done-toggle ${mealDoneMap?.[dayIndex]?.breakfast? 'done' : ''}`}
+                              onClick={(e)=>{ e.stopPropagation(); toggleMealDone(dayIndex,'breakfast'); }}
+                            >{mealDoneMap?.[dayIndex]?.breakfast? '✓ Done' : 'Mark Done'}</button>
                             {expandedMeals[`${dayIndex}-breakfast`] ? (
                               <ChevronUp className="icon-small" />
                             ) : (
@@ -393,6 +417,11 @@ const NutritionPlanner = () => {
                                 {calculateMealCalories(day.lunch)} cal
                               </p>
                             </div>
+                            <button
+                              type="button"
+                              className={`day-done-toggle ${mealDoneMap?.[dayIndex]?.lunch? 'done' : ''}`}
+                              onClick={(e)=>{ e.stopPropagation(); toggleMealDone(dayIndex,'lunch'); }}
+                            >{mealDoneMap?.[dayIndex]?.lunch? '✓ Done' : 'Mark Done'}</button>
                             {expandedMeals[`${dayIndex}-lunch`] ? (
                               <ChevronUp className="icon-small" />
                             ) : (
@@ -425,6 +454,11 @@ const NutritionPlanner = () => {
                                 {calculateMealCalories(day.dinner)} cal
                               </p>
                             </div>
+                            <button
+                              type="button"
+                              className={`day-done-toggle ${mealDoneMap?.[dayIndex]?.dinner? 'done' : ''}`}
+                              onClick={(e)=>{ e.stopPropagation(); toggleMealDone(dayIndex,'dinner'); }}
+                            >{mealDoneMap?.[dayIndex]?.dinner? '✓ Done' : 'Mark Done'}</button>
                             {expandedMeals[`${dayIndex}-dinner`] ? (
                               <ChevronUp className="icon-small" />
                             ) : (
@@ -473,33 +507,23 @@ const NutritionPlanner = () => {
       )}
     </div>
   );
-};
+}
 
-function CalorieSummary({ days }){
-  const ReactRef = React; // ensure React in scope
+function CalorieSummary({ days, mealDoneMap }){
+  const ReactRef = React;
   const [consumed, setConsumed] = ReactRef.useState(0);
   const prefs = (()=>{ try{return JSON.parse(localStorage.getItem('nutritionQuiz')||'{}');}catch{return {};}})();
   const target = prefs?.dailyCalorieLimit || 2000;
-  const dateISO = new Date().toISOString().substring(0,10);
 
   ReactRef.useEffect(()=>{
-    let cancelled=false;
-    async function load(){
-      try{
-        const token = localStorage.getItem('accessToken')||'';
-        if(token){
-          const res = await fetch(`/api/meals/daily/summary?date=${encodeURIComponent(dateISO)}`, { headers:{ Authorization:`Bearer ${token}` }});
-          if(res.ok){ const data = await res.json(); if(!cancelled){ setConsumed(data.totalCalories||0); return; } }
-        }
-      }catch{}
-      // fallback to local
-      const today = (days && days[0]) ? days[0] : { breakfast:{items:[]}, lunch:{items:[]}, dinner:{items:[]} };
-      const local = (today.breakfast?.items||[]).reduce((s,i)=>s+i.calories,0) + (today.lunch.items||[]).reduce((s,i)=>s+i.calories,0) + (today.dinner.items||[]).reduce((s,i)=>s+i.calories,0);
-      if(!cancelled) setConsumed(local);
-    }
-    load();
-    return ()=>{ cancelled=true };
-  }, [days, dateISO]);
+    const today = (days && days[0]) ? days[0] : { breakfast:{items:[]}, lunch:{items:[]}, dinner:{items:[]} };
+    const done = mealDoneMap?.[0] || {};
+    const kcal = (arr)=> (arr||[]).reduce((s,i)=> s + (i.calories||0), 0);
+    const total = (done.breakfast? kcal(today.breakfast?.items):0)
+               + (done.lunch? kcal(today.lunch?.items):0)
+               + (done.dinner? kcal(today.dinner?.items):0);
+    setConsumed(total);
+  }, [days, mealDoneMap]);
 
   const pct = Math.min(100, Math.round((consumed/target)*100));
   return (
