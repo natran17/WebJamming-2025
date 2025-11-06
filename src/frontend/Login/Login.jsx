@@ -1,4 +1,5 @@
 import React, {useState} from 'react'
+import { useNavigate } from 'react-router-dom'
 import './Login.css'
 import ucibackground from '../../Images/UCI background.jpg'
 // import { login, signup } from '../../firebase'
@@ -9,13 +10,36 @@ const Login = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const user_auth = async (event)=>{
     event.preventDefault();
-    if(signState==="Sign In"){
-      await login(email, password);
-    }else{
-      await signup(name, email, password);
+    try{
+      if(signState==="Sign In"){
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, password })
+        });
+        if(!res.ok){ const err=await res.json().catch(()=>({message:`HTTP ${res.status}`})); throw new Error(err.message||'Login failed'); }
+        const data = await res.json();
+        if(data?.accessToken){ localStorage.setItem('accessToken', data.accessToken); }
+        navigate('/GettingStarted');
+      }else{
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, email, password })
+        });
+        if(!res.ok){ const err=await res.json().catch(()=>({message:`HTTP ${res.status}`})); throw new Error(err.message||'Signup failed'); }
+        const data = await res.json();
+        if(data?.accessToken){ localStorage.setItem('accessToken', data.accessToken); }
+        navigate('/GettingStarted');
+      }
+    }catch(e){
+      alert(e.message || 'Something went wrong');
     }
   }
 
