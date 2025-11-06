@@ -1,16 +1,19 @@
 .navbar {
   padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: center;  
+  align-items: center;
 }
 
 .navbar-container {
-  width: 95vw;
-  margin: 0 0;
+  width: 90vw;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #004773;
   border-radius: 50px;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
