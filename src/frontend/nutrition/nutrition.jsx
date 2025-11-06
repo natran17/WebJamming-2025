@@ -44,8 +44,19 @@ const NutritionPlanner = () => {
   const [chatInput, setChatInput] = useState('');
   const [days, setDays] = useState(()=> {
     const base = JSON.parse(JSON.stringify(weekDays||[]));
-    // ensure breakfast exists for all days
-    base.forEach(d=>{ if(!d.breakfast){ d.breakfast = { name:'Breakfast', items:[] }; } });
+    // ensure breakfast exists for all days and seed with a default item (non-zero kcal)
+    const bopts = [
+      { name:'Greek yogurt bowl', calories: 400 },
+      { name:'Oatmeal with banana & PB', calories: 380 },
+      { name:'Eggs, toast & avocado', calories: 400 }
+    ];
+    base.forEach((d,idx)=>{
+      if(!d.breakfast){ d.breakfast = { name:'Breakfast', items:[] }; }
+      if(!Array.isArray(d.breakfast.items) || d.breakfast.items.length===0){
+        const pick = bopts[idx % bopts.length];
+        d.breakfast.items = [{ name: pick.name, calories: pick.calories }];
+      }
+    });
     return base;
   });
   const [doneMap, setDoneMap] = useState(()=>{ try{return JSON.parse(localStorage.getItem('nutritionDone')||'{}');}catch{return {}}});
@@ -95,14 +106,15 @@ const NutritionPlanner = () => {
   function generateMealPlan(){
     const prefs = getSavedPrefs();
     const options = pickFoodOptions(prefs, 12);
+    const bbank = breakfastFoodBank();
     const pickTwo = (arr, start) => [arr[start % arr.length], arr[(start+1) % arr.length]];
     const next = JSON.parse(JSON.stringify(days));
     for(let i=0;i<next.length;i++){
-      const bfOpt = options[(i*3) % options.length];
+      const bfOpt = bbank[i % bbank.length];
       const pair1 = pickTwo(options, i*3+1);
       const pair2 = pickTwo(options, i*3+2);
       next[i].breakfast = next[i].breakfast || { name:'Breakfast', items:[] };
-      next[i].breakfast.items = [bfOpt];
+      next[i].breakfast.items = [{ name: bfOpt.name, calories: bfOpt.calories }];
       next[i].lunch.items = pair1;
       next[i].dinner.items = pair2;
     }
@@ -168,6 +180,15 @@ const NutritionPlanner = () => {
       thai:[{name:'Pad Thai (Chicken)',calories:680},{name:'Tom Yum + Rice',calories:420}],
       middleeastern:[{name:'Falafel Bowl',calories:520},{name:'Chicken Kabob Plate',calories:600}],
     };
+  }
+
+  function breakfastFoodBank(){
+    return [
+      { name:'Greek yogurt (1 cup) + granola + berries', calories:400 },
+      { name:'Oatmeal (1/2 cup oats) + banana + PB', calories:380 },
+      { name:'2 eggs + toast + 1/2 avocado', calories:400 },
+      { name:'Protein smoothie (milk, banana, protein)', calories:420 }
+    ];
   }
 
   function pickFoodOptions(prefs, limit=6){
