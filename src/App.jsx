@@ -4,6 +4,7 @@ import Login from './frontend/Login/Login.jsx'
 import Home from './frontend/Home/Home.jsx'
 import StartingPage from './frontend/StartingPage/StartingPage.jsx'
 import ExercisePage from './frontend/exercise/exercise.jsx'
+import NutritionPage from './frontend/nutrition/nutrition.jsx'
 
 function App() {
 
@@ -15,6 +16,8 @@ function App() {
       <Route path="/login" element={<Login />} /> 
       <Route path="/GettingStarted" element={<StartingPage />} /> 
       <Route path="/exercise" element={<ExercisePage />} /> 
+      <Route path="/nutrition" element={<NutritionPage />} /> 
+
     </Routes>
     </>
   )

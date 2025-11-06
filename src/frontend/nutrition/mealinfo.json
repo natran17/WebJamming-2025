@@ -1,0 +1,113 @@
+[
+    {
+      "day": "Monday",
+      "date": "Jan 20",
+      "lunch": {
+        "name": "Grilled Chicken Salad",
+        "items": [
+          { "name": "Grilled chicken breast", "calories": 165 },
+          { "name": "Mixed greens", "calories": 10 },
+          { "name": "Cherry tomatoes", "calories": 20 },
+          { "name": "Balsamic vinaigrette", "calories": 45 }
+        ]
+      },
+      "dinner": {
+        "name": "Salmon with Quinoa",
+        "items": [
+          { "name": "Baked salmon fillet", "calories": 280 },
+          { "name": "Quinoa (1 cup)", "calories": 220 },
+          { "name": "Steamed broccoli", "calories": 55 },
+          { "name": "Lemon butter sauce", "calories": 85 }
+        ]
+      }
+    },
+    {
+      "day": "Tuesday",
+      "date": "Jan 21",
+      "lunch": {
+        "name": "Turkey Wrap",
+        "items": [
+          { "name": "Whole wheat tortilla", "calories": 130 },
+          { "name": "Sliced turkey breast", "calories": 120 },
+          { "name": "Avocado", "calories": 80 },
+          { "name": "Lettuce & tomato", "calories": 15 }
+        ]
+      },
+      "dinner": {
+        "name": "Beef Stir-Fry",
+        "items": [
+          { "name": "Lean beef strips", "calories": 210 },
+          { "name": "Mixed vegetables", "calories": 60 },
+          { "name": "Brown rice", "calories": 215 },
+          { "name": "Soy sauce & sesame oil", "calories": 55 }
+        ]
+      }
+    },
+    {
+      "day": "Wednesday",
+      "date": "Jan 22",
+      "lunch": {
+        "name": "Mediterranean Bowl",
+        "items": [
+          { "name": "Chickpeas", "calories": 135 },
+          { "name": "Cucumber & tomato", "calories": 25 },
+          { "name": "Feta cheese", "calories": 75 },
+          { "name": "Hummus", "calories": 70 },
+          { "name": "Pita bread", "calories": 95 }
+        ]
+      },
+      "dinner": {
+        "name": "Chicken Pasta",
+        "items": [
+          { "name": "Whole wheat pasta", "calories": 180 },
+          { "name": "Grilled chicken", "calories": 165 },
+          { "name": "Marinara sauce", "calories": 70 },
+          { "name": "Parmesan cheese", "calories": 45 }
+        ]
+      }
+    },
+    {
+      "day": "Thursday",
+      "date": "Jan 23",
+      "lunch": {
+        "name": "Tuna Salad Bowl",
+        "items": [
+          { "name": "Tuna (in water)", "calories": 120 },
+          { "name": "Mixed greens", "calories": 10 },
+          { "name": "Boiled egg", "calories": 70 },
+          { "name": "Olive oil dressing", "calories": 90 }
+        ]
+      },
+      "dinner": {
+        "name": "Pork Chops & Sweet Potato",
+        "items": [
+          { "name": "Grilled pork chop", "calories": 230 },
+          { "name": "Baked sweet potato", "calories": 180 },
+          { "name": "Green beans", "calories": 45 },
+          { "name": "Butter", "calories": 35 }
+        ]
+      }
+    },
+    {
+      "day": "Friday",
+      "date": "Jan 24",
+      "lunch": {
+        "name": "Veggie Buddha Bowl",
+        "items": [
+          { "name": "Quinoa", "calories": 110 },
+          { "name": "Roasted chickpeas", "calories": 135 },
+          { "name": "Roasted vegetables", "calories": 80 },
+          { "name": "Tahini dressing", "calories": 90 }
+        ]
+      },
+      "dinner": {
+        "name": "Shrimp Tacos",
+        "items": [
+          { "name": "Grilled shrimp", "calories": 140 },
+          { "name": "Corn tortillas (3)", "calories": 180 },
+          { "name": "Cabbage slaw", "calories": 25 },
+          { "name": "Lime crema", "calories": 80 }
+        ]
+      }
+    }
+  ]
