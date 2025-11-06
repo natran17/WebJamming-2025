@@ -4,6 +4,28 @@ import './nutrition.css'
 import NavBar from '../Navbar/NavBar';
 import weekDays from './mealinfo.json'
 
+const CUISINES = [
+  { key:'american', label:'American' },
+  { key:'asian', label:'Asian' },
+  { key:'mediterranean', label:'Mediterranean' },
+  { key:'mexican', label:'Mexican' },
+  { key:'indian', label:'Indian' },
+  { key:'italian', label:'Italian' },
+  { key:'japanese', label:'Japanese' },
+  { key:'thai', label:'Thai' },
+  { key:'middleeastern', label:'Middle Eastern' }
+];
+
+const RESTRICTIONS = [
+  { key:'vegetarian', label:'Vegetarian' },
+  { key:'vegan', label:'Vegan' },
+  { key:'glutenfree', label:'Gluten-free' },
+  { key:'dairyfree', label:'Dairy-free' },
+  { key:'halal', label:'Halal' },
+  { key:'kosher', label:'Kosher' },
+  { key:'nutfree', label:'Nut-free' }
+];
+
 const NutritionPlanner = () => {
   const [expandedMeals, setExpandedMeals] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
@@ -20,6 +42,9 @@ const NutritionPlanner = () => {
   });
   const [chat, setChat] = useState([{ role:'assistant', text: 'Hi! Tell me what you feel like eating, your goal, or where you are, and I\'ll suggest meals.' }]);
   const [chatInput, setChatInput] = useState('');
+  const [days, setDays] = useState(()=> JSON.parse(JSON.stringify(weekDays)));
+  const [doneMap, setDoneMap] = useState(()=>{ try{return JSON.parse(localStorage.getItem('nutritionDone')||'{}');}catch{return {}}});
+  const [mealPrep, setMealPrep] = useState([]); // detailed multi-day plan
 
 
   const toggleMeal = (dayIndex, mealType) => {
@@ -42,7 +67,7 @@ const NutritionPlanner = () => {
   };
 
   const calculateDayCalories = (day) => {
-    return calculateMealCalories(day.lunch) + calculateMealCalories(day.dinner);
+    return calculateMealCalories(day.breakfast||{items:[]}) + calculateMealCalories(day.lunch) + calculateMealCalories(day.dinner);
   };
 
   function computeCalories(){
@@ -59,6 +84,57 @@ const NutritionPlanner = () => {
     if(quiz.goals==='gain') target = tdee * 1.10;
     // round to nearest 50
     return Math.round(target/50)*50;
+  }
+
+  function generateMealPlan(){
+    const prefs = getSavedPrefs();
+    const options = pickFoodOptions(prefs, 12);
+    const pickTwo = (arr, start) => [arr[start % arr.length], arr[(start+1) % arr.length]];
+    const next = JSON.parse(JSON.stringify(days));
+    for(let i=0;i<next.length;i++){
+      const bfOpt = options[(i*3) % options.length];
+      const pair1 = pickTwo(options, i*3+1);
+      const pair2 = pickTwo(options, i*3+2);
+      next[i].breakfast = next[i].breakfast || { name:'Breakfast', items:[] };
+      next[i].breakfast.items = [bfOpt];
+      next[i].lunch.items = pair1;
+      next[i].dinner.items = pair2;
+    }
+    setDays(next);
+  }
+
+  function toggleDayDone(idx){
+    const next = { ...(doneMap||{}) };
+    next[idx] = !next[idx];
+    setDoneMap(next);
+    try{ localStorage.setItem('nutritionDone', JSON.stringify(next)); }catch{}
+  }
+
+  function generateMealPrep(){
+    // simple rules-based generator using target calories and cuisine bank
+    const prefs = getSavedPrefs();
+    const target = prefs?.dailyCalorieLimit || 1800;
+    const bank = cuisineFoodBank();
+    const pool = Object.keys(prefs?.cuisines||{}).filter(k=>prefs.cuisines[k]).flatMap(k=>bank[k]||[]);
+    const pick = (n, off=0)=>{
+      const src = pool.length?pool:Object.values(bank).flat();
+      return Array.from({length:n}).map((_,i)=> src[(i+off)%src.length]);
+    };
+    const macroLine=(p,c,f)=>`Macros: ${p}g protein | ${c}g carbs | ${f}g fat`;
+    const day = (idx)=>{
+      const kcal = (pct)=> Math.round((target*pct)/10)*10;
+      return {
+        title:`Day ${idx+1}`,
+        total: target,
+        meals:[
+          { name:'Breakfast', kcal:kcal(0.22), items:[ pick(1,idx)[0].name+' – '+kcal(0.22)+' kcal' ], macros: macroLine(25,50,12) },
+          { name:'Lunch',     kcal:kcal(0.28), items:[ pick(1,idx+1)[0].name+' – '+kcal(0.28)+' kcal' ], macros: macroLine(35,35,18) },
+          { name:'Snack',     kcal:kcal(0.12), items:[ 'Fruit or bar – '+kcal(0.12)+' kcal' ], macros: macroLine(12,22,8) },
+          { name:'Dinner',    kcal:kcal(0.38), items:[ pick(1,idx+2)[0].name+' – '+kcal(0.38)+' kcal' ], macros: macroLine(35,35,20) },
+        ]
+      };
+    };
+    setMealPrep([day(0), day(1), day(2)]);
   }
 
   function getSavedPrefs(){
@@ -143,10 +219,10 @@ const NutritionPlanner = () => {
               <div className="quiz-section">
                 <label className="quiz-label">Preferred cuisines</label>
                 <div className="quiz-grid">
-                  {Object.keys(quiz.cuisines).map(key=> (
-                    <label key={key} className="quiz-checkbox">
-                      <input type="checkbox" checked={quiz.cuisines[key]} onChange={e=>setQuiz(q=>({...q, cuisines:{...q.cuisines, [key]:e.target.checked}}))} />
-                      <span>{key.charAt(0).toUpperCase()+key.slice(1)}</span>
+                  {CUISINES.map(c => (
+                    <label key={c.key} className="quiz-checkbox">
+                      <input type="checkbox" checked={!!quiz.cuisines[c.key]} onChange={e=>setQuiz(q=>({...q, cuisines:{...q.cuisines, [c.key]:e.target.checked}}))} />
+                      <span>{c.label}</span>
                     </label>
                   ))}
                 </div>
@@ -155,10 +231,10 @@ const NutritionPlanner = () => {
               <div className="quiz-section">
                 <label className="quiz-label">Dietary restrictions</label>
                 <div className="quiz-grid">
-                  {Object.keys(quiz.restrictions).map(key=> (
-                    <label key={key} className="quiz-checkbox">
-                      <input type="checkbox" checked={quiz.restrictions[key]} onChange={e=>setQuiz(q=>({...q, restrictions:{...q.restrictions, [key]:e.target.checked}}))} />
-                      <span>{key.replace('free','-free').replace('gluten','Gluten').replace('dairy','Dairy').replace('Vegetarian','Vegetarian')}</span>
+                  {RESTRICTIONS.map(r => (
+                    <label key={r.key} className="quiz-checkbox">
+                      <input type="checkbox" checked={!!quiz.restrictions[r.key]} onChange={e=>setQuiz(q=>({...q, restrictions:{...q.restrictions, [r.key]:e.target.checked}}))} />
+                      <span>{r.label}</span>
                     </label>
                   ))}
                 </div>
@@ -208,17 +284,42 @@ const NutritionPlanner = () => {
         </button>
 
         <h1 className="title">Weekly Nutrition Planner</h1>
+        <div className="planner-cta-row">
+          <button className="btn btn-primary ai-generate" onClick={generateMealPlan}>AI Generate Meal Plan</button>
+          <button className="btn btn-accent ai-generate" onClick={generateMealPrep} style={{marginLeft:'.5rem'}}>AI Meal Prep (3 days)</button>
+          <button className="btn btn-secondary ai-generate" onClick={()=>{ localStorage.removeItem('nutritionQuizDone'); window.location.reload(); }} style={{marginLeft:'.5rem'}}>Change Preferences</button>
+        </div>
 
         {/* Calorie target + progress (for today) */}
-        <CalorieSummary />
+        <CalorieSummary days={days} />
 
         <div className="nutrition-layout">
           <div className="nutrition-main">
             {/* Food options based on cuisines */}
             <FoodOptions />
 
+            {mealPrep.length>0 && (
+              <div className="prep-card">
+                {mealPrep.map((d,di)=> (
+                  <div key={di} className="prep-day">
+                    <div className="prep-day-title">🗓 {d.title} <span className="prep-total">Total: ~{d.total} kcal</span></div>
+                    {d.meals.map((m,mi)=> (
+                      <div key={mi} className="prep-meal">
+                        <div className="prep-meal-name">{m.name} <span className="prep-kcal">({m.kcal} kcal)</span></div>
+                        <ul className="prep-list">
+                          {m.items.map((it,ii)=>(<li key={ii}>{it}</li>))}
+                        </ul>
+                        <div className="prep-macros">{m.macros}</div>
+                        <div className="prep-instructions">Prep: Preheat pan/oven, cook protein until done, assemble with grains/veg, finish with sauce or drizzle. Adjust portions to meet kcal.</div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="nutrition-grid">
-              {weekDays.map((day, dayIndex) => {
+              {days.map((day, dayIndex) => {
                 const dayCalories = calculateDayCalories(day);
 
                 return (
@@ -232,6 +333,13 @@ const NutritionPlanner = () => {
                         <p className="day-date">{day.date}</p>
                         <p className="day-total">Total: {dayCalories} cal</p>
                       </div>
+                      <div className="day-actions">
+                        <button
+                          type="button"
+                          className={`day-done-toggle ${doneMap?.[dayIndex]? 'done' : ''}`}
+                          onClick={(e)=>{ e.stopPropagation(); toggleDayDone(dayIndex); }}
+                        >{doneMap?.[dayIndex]? '✓ Done' : 'Mark Done'}</button>
+                      </div>
                       {expandedDays[dayIndex] ? (
                         <ChevronUp className="icon" />
                       ) : (
@@ -241,6 +349,37 @@ const NutritionPlanner = () => {
 
                     {expandedDays[dayIndex] && (
                       <div className="day-details">
+                        {/* Breakfast */}
+                        <div className="meal-card">
+                          <button
+                            onClick={() => toggleMeal(dayIndex, "breakfast")}
+                            className="meal-header"
+                          >
+                            <div className="flex-1">
+                              <h3 className="meal-title">Breakfast</h3>
+                              <p className="meal-name">{(day.breakfast&&day.breakfast.name)||'Breakfast'}</p>
+                              <p className="meal-calories">
+                                {calculateMealCalories(day.breakfast||{items:[]})} cal
+                              </p>
+                            </div>
+                            {expandedMeals[`${dayIndex}-breakfast`] ? (
+                              <ChevronUp className="icon-small" />
+                            ) : (
+                              <ChevronDown className="icon-small" />
+                            )}
+                          </button>
+
+                          {expandedMeals[`${dayIndex}-breakfast`] && (
+                            <div className="meal-items">
+                              {(day.breakfast?.items||[]).map((item, itemIndex) => (
+                                <div key={itemIndex} className="meal-item">
+                                  <span>{item.name}</span>
+                                  <span>{item.calories} cal</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         {/* Lunch */}
                         <div className="meal-card">
                           <button
@@ -336,21 +475,54 @@ const NutritionPlanner = () => {
   );
 };
 
-function CalorieSummary(){
+function CalorieSummary({ days }){
+  const ReactRef = React; // ensure React in scope
+  const [consumed, setConsumed] = ReactRef.useState(0);
   const prefs = (()=>{ try{return JSON.parse(localStorage.getItem('nutritionQuiz')||'{}');}catch{return {};}})();
   const target = prefs?.dailyCalorieLimit || 2000;
-  // assume "today" is index 0 in weekDays demo; compute from data
-  const today = weekDays[0] || { lunch:{items:[]}, dinner:{items:[]} };
-  const consumed = (today.lunch.items||[]).reduce((s,i)=>s+i.calories,0) + (today.dinner.items||[]).reduce((s,i)=>s+i.calories,0);
-  const pct = Math.min(100, Math.round(consumed/target*100));
+  const dateISO = new Date().toISOString().substring(0,10);
+
+  ReactRef.useEffect(()=>{
+    let cancelled=false;
+    async function load(){
+      try{
+        const token = localStorage.getItem('accessToken')||'';
+        if(token){
+          const res = await fetch(`/api/meals/daily/summary?date=${encodeURIComponent(dateISO)}`, { headers:{ Authorization:`Bearer ${token}` }});
+          if(res.ok){ const data = await res.json(); if(!cancelled){ setConsumed(data.totalCalories||0); return; } }
+        }
+      }catch{}
+      // fallback to local
+      const today = (days && days[0]) ? days[0] : { breakfast:{items:[]}, lunch:{items:[]}, dinner:{items:[]} };
+      const local = (today.breakfast?.items||[]).reduce((s,i)=>s+i.calories,0) + (today.lunch.items||[]).reduce((s,i)=>s+i.calories,0) + (today.dinner.items||[]).reduce((s,i)=>s+i.calories,0);
+      if(!cancelled) setConsumed(local);
+    }
+    load();
+    return ()=>{ cancelled=true };
+  }, [days, dateISO]);
+
+  const pct = Math.min(100, Math.round((consumed/target)*100));
   return (
     <div className="calorie-summary">
       <div className="calorie-meta">
-        <div><strong>Today:</strong> {consumed} / {target} kcal</div>
-        <div className="calorie-pct">{pct}%</div>
+        <div className="calorie-title">Today</div>
+        <div className="calorie-numbers"><span className="calorie-consumed">{consumed}</span><span className="calorie-sep">/</span><span className="calorie-target">{target}</span> <span className="calorie-unit">kcal</span></div>
       </div>
-      <div className="calorie-bar"><div className="calorie-fill" style={{width:`${pct}%`}} /></div>
+      <CircularProgress percent={pct} />
     </div>
+  );
+}
+
+function CircularProgress({ percent=0 }){
+  const r = 32; // smaller radius for compact chart
+  const c = 2 * Math.PI * r;
+  const off = c - (percent/100)*c;
+  return (
+    <svg className="circular" viewBox="0 0 100 100" aria-label={`Progress ${percent}%`}>
+      <circle className="circular-bg" cx="50" cy="50" r={r} />
+      <circle className="circular-fg" cx="50" cy="50" r={r} strokeDasharray={c} strokeDashoffset={off} />
+      <text x="50" y="54" textAnchor="middle" className="circular-text">{percent}%</text>
+    </svg>
   );
 }
 

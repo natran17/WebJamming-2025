@@ -215,3 +215,17 @@
     border-radius: 9999px;
     background: linear-gradient(to right, #3b82f6, #2563eb);
   }
+
+  /* Today summary + compact circular chart */
+  .calorie-summary{ display:flex; align-items:center; gap:.75rem; margin: .75rem 0 1.25rem 0; }
+  .calorie-title{ font-weight:700; color:#111827; }
+  .calorie-numbers{ font-weight:700; color:#111827; }
+  .calorie-consumed{ color:#111827; }
+  .calorie-sep{ color:#9ca3af; margin: 0 .25rem; }
+  .calorie-target{ color:#6b7280; }
+  .calorie-unit{ color:#9ca3af; margin-left:.25rem; font-weight:600; }
+
+  .circular{ width:52px; height:52px; }
+  .circular-bg{ fill:none; stroke:#e5e7eb; stroke-width:8; }
+  .circular-fg{ fill:none; stroke:#10b981; stroke-width:8; stroke-linecap:round; transition: stroke-dashoffset .25s ease; }
+  .circular-text{ font-size:11px; font-weight:700; fill:#111827; }

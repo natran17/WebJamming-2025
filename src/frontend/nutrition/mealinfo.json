@@ -109,5 +109,49 @@
           { "name": "Lime crema", "calories": 80 }
         ]
       }
+    },
+    {
+      "day": "Saturday",
+      "date": "Jan 25",
+      "lunch": {
+        "name": "Caprese Sandwich",
+        "items": [
+          { "name": "Ciabatta", "calories": 200 },
+          { "name": "Fresh mozzarella", "calories": 150 },
+          { "name": "Tomato & basil", "calories": 30 },
+          { "name": "Olive oil drizzle", "calories": 90 }
+        ]
+      },
+      "dinner": {
+        "name": "Chicken Teriyaki Bowl",
+        "items": [
+          { "name": "Grilled chicken", "calories": 220 },
+          { "name": "White rice (1 cup)", "calories": 200 },
+          { "name": "Steamed vegetables", "calories": 60 },
+          { "name": "Teriyaki sauce", "calories": 70 }
+        ]
+      }
+    },
+    {
+      "day": "Sunday",
+      "date": "Jan 26",
+      "lunch": {
+        "name": "Greek Salad",
+        "items": [
+          { "name": "Romaine & cucumber", "calories": 35 },
+          { "name": "Kalamata olives", "calories": 60 },
+          { "name": "Feta cheese", "calories": 80 },
+          { "name": "Lemon-oregano dressing", "calories": 90 }
+        ]
+      },
+      "dinner": {
+        "name": "Beef & Veggie Skillet",
+        "items": [
+          { "name": "Lean ground beef", "calories": 240 },
+          { "name": "Mixed vegetables", "calories": 80 },
+          { "name": "Potatoes", "calories": 180 },
+          { "name": "Olive oil", "calories": 90 }
+        ]
+      }
     }
   ]
