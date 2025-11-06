@@ -7,13 +7,14 @@ const NavBar = () => {
 
     return (
         <nav className="navbar">
+          <div className='white'>
           <div className="navbar-container">
-            <a href="#" className="navbar-logo">Zot Exercise</a>
+            
+            <a href="/" className="navbar-logo">Zot Exercise</a>
             
             <div className={`navbar-menu ${menuOpen ? 'open' : ''}`}>
               <a href="exercise" className="navbar-link ">Exercise</a>
               <a href="nutrition" className="navbar-link ">Nutrition</a>
-              <a href="aboutyou" className="navbar-link ">About you</a>
               <a href="login" className="btn btn-login">Login</a>
             </div>
   
@@ -26,6 +27,8 @@ const NavBar = () => {
               <span></span>
               <span></span>
             </button>
+
+            </div>          
           </div>
         </nav>
 
