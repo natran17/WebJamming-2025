@@ -244,3 +244,50 @@
   .circular-bg{ fill:none; stroke:#e5e7eb; stroke-width:8; }
   .circular-fg{ fill:none; stroke:#10b981; stroke-width:8; stroke-linecap:round; transition: stroke-dashoffset .25s ease; }
   .circular-text{ font-size:11px; font-weight:700; fill:#111827; }
+
+  /* Today progress bar (add-only) */
+  .calorie-bar{
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  .calorie-fill{
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #22c55e);
+    border-radius: 9999px;
+    transition: width .4s ease;
+  }
+
+  /* Suggested Meals (add-only) */
+  .options-card{
+    margin-top: 1rem;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding: 12px 14px;
+  }
+  .options-title{
+    font-weight:700;
+    color:#0f172a;
+    margin-bottom:.5rem;
+  }
+  .options-grid{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap:.5rem;
+  }
+  .option-pill{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:#f9fafb;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:.5rem .6rem;
+  }
+  .option-name{ font-weight:600; color:#111827; }
+  .option-cal{ color:#6b7280; }

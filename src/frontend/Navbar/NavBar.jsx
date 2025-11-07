@@ -33,7 +33,7 @@ const NavBar = () => {
           <div className='white'>
           <div className="navbar-container">
             
-            <a href="/" className="navbar-logo">Zot Exercise</a>
+            <a href="/" className="navbar-logo">ZotBoost</a>
             
             <div className={`navbar-menu ${menuOpen ? 'open' : ''}`}>
               <a href="exercise" className="navbar-link ">Exercise</a>

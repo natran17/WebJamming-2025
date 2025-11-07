@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import './nutrition.css'
 import NavBar from '../Navbar/NavBar';
@@ -12,6 +12,7 @@ import weekDays from './mealinfo.json'
       dinner: totalForMeal(day?.dinner?.items||[])
     };
 
+
     if(!mealDone) return all.breakfast + all.lunch + all.dinner;
     const key = (m)=> `${dayIndex}-${m}`;
     let sum = 0;
@@ -23,13 +24,15 @@ import weekDays from './mealinfo.json'
 
   
 
+  
+
   function CalorieSummary({ days, mealDoneMap }){
     const prefs = (()=>{ try{return JSON.parse(localStorage.getItem('nutritionQuiz')||'{}');}catch{return {};}})();
     const target = (typeof prefs.dailyCalorieLimit==='number' && prefs.dailyCalorieLimit>0)
       ? Math.round(prefs.dailyCalorieLimit/50)*50
       : 2000;
     const today = days && days[0] ? days[0] : { breakfast:{items:[]}, lunch:{items:[]}, dinner:{items:[]} };
-    const consumed = totalForDay(today, mealDoneMap, 0);
+    const consumed = totalForDay(today, null, 0);
     const pct = Math.max(0, Math.min(100, Math.round((consumed/target)*100)));
     const over = Math.max(0, consumed - target);
     const remain = Math.max(0, target - consumed);
@@ -363,6 +366,16 @@ const NutritionPlanner = () => {
     setChatInput('');
   }
 
+  function assignSuggested(opt, dayIndex, mealKey){
+    try{
+      const next = JSON.parse(JSON.stringify(days));
+      const key = mealKey || 'lunch';
+      if(!next[dayIndex][key]) next[dayIndex][key] = { name: key[0].toUpperCase()+key.slice(1), items:[] };
+      next[dayIndex][key].items = [{ name: opt.name, calories: opt.calories }];
+      setDays(next);
+    }catch{}
+  }
+
   async function handleQuizSubmit(e){
     e.preventDefault();
     try{
@@ -501,7 +514,7 @@ const NutritionPlanner = () => {
         <div className="nutrition-layout">
           <div className="nutrition-main">
             {/* Food options based on cuisines */}
-            <FoodOptions />
+            <FoodOptions days={days} onAssign={assignSuggested} />
 
             {mealPrep.length>0 && (
               <div className="prep-card">
@@ -776,7 +789,7 @@ const NutritionPlanner = () => {
   );
 }
 
-function FoodOptions(){
+function FoodOptions({ days=[], onAssign }){
   const prefs = (()=>{ try{return JSON.parse(localStorage.getItem('nutritionQuiz')||'{}');}catch{return {};}})();
   const options = (function(){
     const bank = {
@@ -793,17 +806,39 @@ function FoodOptions(){
     const picked=[]; Object.keys(prefs?.cuisines||{}).forEach(k=>{ if(prefs.cuisines[k]) picked.push(...(bank[k]||[])); });
     return picked.length?picked.slice(0,6):Object.values(bank).flat().slice(0,6);
   })();
+  const [open, setOpen] = React.useState(-1);
+  const [selDay, setSelDay] = React.useState(0);
+  const [selMeal, setSelMeal] = React.useState('lunch');
+  const dayNames = days.map(d=> d?.day || 'Day');
   return (
     <div className="options-card">
       <div className="options-title">Suggested Meals</div>
       <div className="options-grid">
         {options.map((o,i)=> (
-          <div key={i} className="option-pill">
+          <div key={i} className="option-pill" onClick={()=> setOpen(open===i? -1 : i)} style={{cursor:'pointer'}}>
             <div className="option-name">{o.name}</div>
             <div className="option-cal">{o.calories} cal</div>
           </div>
         ))}
       </div>
+      {open>-1 && (
+        <div className="card" style={{marginTop:'.5rem'}}>
+          <div style={{fontWeight:700, marginBottom:6}}>{options[open]?.name}</div>
+          <div style={{color:'#6b7280', marginBottom:8}}>Quick how-to: Build a balanced plate. Aim for protein + fiber. Adjust portions to meet calories.</div>
+          <div style={{display:'flex', gap:'.5rem', alignItems:'center', flexWrap:'wrap'}}>
+            <select className="quiz-select" value={selDay} onChange={e=>setSelDay(parseInt(e.target.value,10))} style={{maxWidth:'200px'}}>
+              {dayNames.map((n,di)=> (<option key={di} value={di}>{n||`Day ${di+1}`}</option>))}
+            </select>
+            <select className="quiz-select" value={selMeal} onChange={e=>setSelMeal(e.target.value)} style={{maxWidth:'180px'}}>
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+            </select>
+            <button className="btn btn-primary" onClick={()=> onAssign && onAssign(options[open], selDay, selMeal)}>Use for this day</button>
+            <button className="btn btn-secondary" onClick={()=> setOpen(-1)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

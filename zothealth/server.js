@@ -24,8 +24,10 @@ app.use('/api/auth', authLimiter, require('./src/routes/auth'));
 app.use('/api/users', require('./src/routes/users'));
 app.use('/api/workouts', require('./src/routes/workouts'));
 app.use('/api/meals', require('./src/routes/meals'));
+app.use('/api/exercise-logs', require('./src/routes/exerciseLogs'));
 app.use('/api/ai', require('./src/routes/ai'));
 app.use('/api/search', require('./src/routes/search'));
+app.use('/api/wger', require('./src/routes/wger'));
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 app.use(errorHandler);
 

@@ -207,3 +207,60 @@
   }
   .form-input.small{ max-width:120px; }
   .form-actions{ display:flex; justify-content:flex-end; }
+
+  /* --- PREMIUM LOG SECTION --- */
+  .log-section{
+    margin-top: 2rem;
+    background: linear-gradient(180deg, rgba(239,246,255,0.65) 0%, rgba(240,253,255,0.65) 100%);
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+  }
+  .log-header{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    border-bottom: 1px solid #e5e7eb; padding-bottom:.75rem; margin-bottom:.75rem;
+  }
+  .log-header h2{ margin:0; font-size:1.25rem; font-weight:700; color:#0f172a; }
+  .log-header p{ margin:.15rem 0 0 0; color:#64748b; font-size:.95rem; }
+
+  .kpi-cards{ display:flex; align-items:center; gap:.75rem; }
+  .kpi-card{
+    background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:.6rem .9rem;
+    box-shadow: 0 6px 16px rgba(15,23,42,.08);
+    min-width: 110px; text-align:center;
+  }
+  .kpi-label{ color:#64748b; font-weight:600; font-size:.8rem; }
+  .kpi-value{ color:#1d4ed8; font-weight:800; font-size:1.25rem; line-height:1.5rem; }
+
+  .log-list{ display:flex; flex-direction:column; gap:.5rem; }
+  .log-item{
+    background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:.75rem .9rem;
+    box-shadow:0 2px 8px rgba(2,6,23,.06);
+    transition: transform .08s ease, box-shadow .2s ease;
+  }
+  .log-item:hover{ transform: translateY(-1px); box-shadow:0 8px 22px rgba(2,6,23,.08); }
+  .log-main{ display:flex; flex-direction:column; gap:.25rem; }
+  .log-name{ font-weight:700; color:#0f172a; }
+  .log-meta{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+  .badge{ background:#dbeafe; color:#1e40af; font-weight:700; padding:.18rem .5rem; border-radius:999px; font-size:.75rem; }
+  .muted{ color:#64748b; font-size:.85rem; }
+
+  /* Info overlay/modal (add-only) */
+  .info-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.45);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+  }
+  .info-modal{
+    width: min(720px, 92%);
+    background:#fff;
+    border-radius:12px;
+    border:1px solid #e5e7eb;
+    box-shadow: 0 20px 48px rgba(2,6,23,.25);
+    padding: 1rem;
+  }

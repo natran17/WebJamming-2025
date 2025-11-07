@@ -2,19 +2,23 @@
 .login {
     display: flex;
     min-height: 100vh;
+    height: 100dvh;
     width: 100vw;
     background-color: #fff;
+    align-items: stretch;
   }
   
   /* Left Image Section */
   .LeftImage {
     flex: 1;
     background-image: url('../../Images/anteater\ banner.jpg');
-    background-size: 140%;  
-    background-position: center 0%;
+    background-size: cover;
+    background-position: center center;
     background-repeat: no-repeat; 
     position: relative;
     min-height: 100vh;
+    height: 100%;
+    width: 100%;
   }
 
   /* Right Form Section */
