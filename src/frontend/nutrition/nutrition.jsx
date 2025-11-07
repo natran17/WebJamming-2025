@@ -4,6 +4,49 @@ import './nutrition.css'
 import NavBar from '../Navbar/NavBar';
 import weekDays from './mealinfo.json'
 
+  function totalForMeal(items){ return (items||[]).reduce((s,i)=> s + (parseInt(i.calories,10)||0), 0); }
+  function totalForDay(day, mealDone, dayIndex){
+    const all = {
+      breakfast: totalForMeal(day?.breakfast?.items||[]),
+      lunch: totalForMeal(day?.lunch?.items||[]),
+      dinner: totalForMeal(day?.dinner?.items||[])
+    };
+
+    if(!mealDone) return all.breakfast + all.lunch + all.dinner;
+    const key = (m)=> `${dayIndex}-${m}`;
+    let sum = 0;
+    if(mealDone[key('breakfast')]) sum += all.breakfast;
+    if(mealDone[key('lunch')]) sum += all.lunch;
+    if(mealDone[key('dinner')]) sum += all.dinner;
+    return sum;
+  }
+
+  
+
+  function CalorieSummary({ days, mealDoneMap }){
+    const prefs = (()=>{ try{return JSON.parse(localStorage.getItem('nutritionQuiz')||'{}');}catch{return {};}})();
+    const target = (typeof prefs.dailyCalorieLimit==='number' && prefs.dailyCalorieLimit>0)
+      ? Math.round(prefs.dailyCalorieLimit/50)*50
+      : 2000;
+    const today = days && days[0] ? days[0] : { breakfast:{items:[]}, lunch:{items:[]}, dinner:{items:[]} };
+    const consumed = totalForDay(today, mealDoneMap, 0);
+    const pct = Math.max(0, Math.min(100, Math.round((consumed/target)*100)));
+    const over = Math.max(0, consumed - target);
+    const remain = Math.max(0, target - consumed);
+    return (
+      <div className="calorie-summary">
+        <div className="calorie-meta">
+          <div><strong>Today:</strong> {consumed} / {target} kcal</div>
+          <div className="calorie-pct">{pct}%</div>
+        </div>
+        <div className="calorie-bar"><div className="calorie-fill" style={{width:`${pct}%`}} /></div>
+        <div style={{marginTop:'.25rem', fontWeight:600, color: over>0? '#b91c1c':'#065f46'}}>
+          {over>0 ? `Over by ${over} kcal` : `Remaining ${remain} kcal`}
+        </div>
+      </div>
+    );
+  }
+
 const CUISINES = [
   { key:'american', label:'American' },
   { key:'asian', label:'Asian' },
@@ -62,6 +105,8 @@ const NutritionPlanner = () => {
   const [doneMap, setDoneMap] = useState(()=>{ try{return JSON.parse(localStorage.getItem('nutritionDone')||'{}');}catch{return {}}});
   const [mealDoneMap, setMealDoneMap] = useState(()=>{ try{return JSON.parse(localStorage.getItem('nutritionMealDone')||'{}');}catch{return {}}});
   const [mealPrep, setMealPrep] = useState([]); // detailed multi-day plan
+  const [customInputs, setCustomInputs] = useState({}); // key: `${dayIndex}-${meal}` -> {name, calories, serving}
+  const [planMode, setPlanMode] = useState('ai'); // 'ai' | 'custom'
 
 
   const toggleMeal = (dayIndex, mealType) => {
@@ -80,43 +125,62 @@ const NutritionPlanner = () => {
   };
 
   const calculateMealCalories = (meal) => {
-    return meal.items.reduce((sum, item) => sum + item.calories, 0);
+    const items = (meal && Array.isArray(meal.items)) ? meal.items : [];
+    return items.reduce((sum, item) => sum + (parseInt(item.calories,10)||0), 0);
   };
 
   const calculateDayCalories = (day) => {
-    return calculateMealCalories(day.breakfast||{items:[]}) + calculateMealCalories(day.lunch) + calculateMealCalories(day.dinner);
+    return calculateMealCalories(day.breakfast||{items:[]}) + calculateMealCalories(day.lunch||{items:[]}) + calculateMealCalories(day.dinner||{items:[]});
   };
 
-  function computeCalories(){
-    const age = parseInt(quiz.age,10) || 25;
-    const height = parseFloat(quiz.heightCm) || 170;
-    const weight = parseFloat(quiz.weightKg) || 70;
-    const sex = quiz.sex === 'female' ? 'female':'male';
+  function computeCaloriesFromData(data){
+    const age = parseInt(data?.age,10) || 25;
+    const height = parseFloat(data?.heightCm) || 170;
+    const weight = parseFloat(data?.weightKg) || 70;
+    const sex = (data?.sex === 'female') ? 'female' : 'male';
     const bmr = sex==='male' ? (10*weight + 6.25*height - 5*age + 5) : (10*weight + 6.25*height - 5*age - 161);
     const factors = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725, veryactive:1.9 };
-    const actKey = quiz.activity;
+    const actKey = data?.activity || 'moderate';
     const tdee = bmr * (factors[actKey] || 1.55);
     let target = tdee;
-    if(quiz.goals==='cut') target = tdee * 0.85;
-    if(quiz.goals==='gain') target = tdee * 1.10;
-    // round to nearest 50
+    const goal = data?.goals || 'maintain';
+    if(goal==='cut') target = tdee * 0.85;
+    if(goal==='gain') target = tdee * 1.10;
     return Math.round(target/50)*50;
+  }
+
+  function computeCalories(){
+    return computeCaloriesFromData(quiz);
   }
 
   function generateMealPlan(){
     const prefs = getSavedPrefs();
-    const options = pickFoodOptions(prefs, 12);
-    const bbank = breakfastFoodBank();
-    const pickTwo = (arr, start) => [arr[start % arr.length], arr[(start+1) % arr.length]];
+    const salt = Math.floor(Math.random()*100000);
+    const target = getDailyTarget();
+    const bBudget = Math.round(target * 0.25);
+    const lBudget = Math.round(target * 0.35);
+    const dBudget = target - bBudget - lBudget; // ensure sums to target
+
+    const allOptions = pickFoodOptions(prefs, 60);
+    const options = shuffle(allOptions);
+    const bbank = shuffle(breakfastFoodBank());
+
     const next = JSON.parse(JSON.stringify(days));
     for(let i=0;i<next.length;i++){
-      const bfOpt = bbank[i % bbank.length];
-      const pair1 = pickTwo(options, i*3+1);
-      const pair2 = pickTwo(options, i*3+2);
+      const used = new Set();
+      // Breakfast: closest single item to breakfast budget
+      const bfOpt = closestItem(bbank, bBudget);
+      used.add(bfOpt.name);
+
+      // Lunch/Dinner: best pairs close to each budget
+      const pair1 = bestPairToBudget(options, lBudget, used);
+      used.add(pair1[0].name); used.add(pair1[1].name);
+      const pair2 = bestPairToBudget(options, dBudget, used);
+
       next[i].breakfast = next[i].breakfast || { name:'Breakfast', items:[] };
       next[i].breakfast.items = [{ name: bfOpt.name, calories: bfOpt.calories }];
-      next[i].lunch.items = pair1;
-      next[i].dinner.items = pair2;
+      next[i].lunch.items = pair1.map(p=>({ name:p.name, calories:p.calories }));
+      next[i].dinner.items = pair2.map(p=>({ name:p.name, calories:p.calories }));
     }
     setDays(next);
   }
@@ -191,12 +255,101 @@ const NutritionPlanner = () => {
     ];
   }
 
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+
+  function getDailyTarget(){
+    const prefs = getSavedPrefs();
+    if(prefs && typeof prefs.dailyCalorieLimit === 'number' && prefs.dailyCalorieLimit>0){
+      return Math.round(prefs.dailyCalorieLimit/50)*50;
+    }
+    // fallback to prefs fields if present, else current quiz, else safe default
+    const fromPrefs = computeCaloriesFromData(prefs||{});
+    if(fromPrefs && !isNaN(fromPrefs)) return fromPrefs;
+    return 2000;
+  }
+
+  function closestItem(bank, budget){
+    let best = bank[0]; let diff = Math.abs(bank[0].calories - budget);
+    for(const it of bank){ const d = Math.abs(it.calories - budget); if(d < diff){ best = it; diff = d; } }
+    return best;
+  }
+
+  function bestPairToBudget(options, budget, usedNames){
+    // limit search to first 18 to keep it fast
+    const arr = options.slice(0, Math.min(18, options.length));
+    let best = [arr[0], arr[1]]; let bestDiff = Math.abs(arr[0].calories + arr[1].calories - budget);
+    for(let i=0;i<arr.length;i++){
+      for(let j=i+1;j<arr.length;j++){
+        if(usedNames.has(arr[i].name) || usedNames.has(arr[j].name)) continue;
+        const sum = arr[i].calories + arr[j].calories;
+        const d = Math.abs(sum - budget);
+        if(d < bestDiff){ best = [arr[i], arr[j]]; bestDiff = d; }
+      }
+    }
+    return best;
+  }
+
   function pickFoodOptions(prefs, limit=6){
     const bank = cuisineFoodBank();
     const chosen = [];
     Object.keys(prefs?.cuisines||{}).forEach(k=>{ if(prefs.cuisines[k]) chosen.push(...(bank[k]||[])); });
     if(chosen.length===0){ Object.values(bank).forEach(list=> chosen.push(...list)); }
     return chosen.slice(0, limit);
+  }
+
+  function servingFor(name=''){
+    const n = (name||'').toLowerCase();
+    const map = [
+      [/yogurt|greek/, '1 cup'],
+      [/granola/, '1/4 cup'],
+      [/berries|fruit/, '1 cup'],
+      [/oatmeal|oats/, '1/2 cup dry'],
+      [/banana/, '1 medium'],
+      [/peanut butter|pb/, '1 tbsp'],
+      [/egg/, '2 eggs'],
+      [/toast|bread/, '1 slice'],
+      [/avocado/, '1/2 avocado'],
+      [/smoothie/, '12 oz'],
+      [/chicken/, '5 oz'],
+      [/turkey/, '4 oz'],
+      [/beef|pork/, '5 oz'],
+      [/shrimp/, '5 oz'],
+      [/tofu/, '150 g'],
+      [/rice|quinoa/, '3/4 cup cooked'],
+      [/pasta|udon/, '1.5 cups cooked'],
+      [/salad|greens|bowl/, '2 cups'],
+      [/taco|tortilla/, '2 pieces'],
+      [/sushi|pieces/, '8 pieces'],
+      [/broccoli|veggie|vegetable|asparagus|green beans/, '1 cup']
+    ];
+    for(const [re,serv] of map){ if(re.test(n)) return serv; }
+    return '1 serving';
+  }
+
+  function setCustomField(dayIndex, meal, field, value){
+    const key = `${dayIndex}-${meal}`;
+    setCustomInputs(prev => ({
+      ...prev,
+      [key]: { ...(prev[key]||{}), [field]: value }
+    }));
+  }
+
+  function addCustomItem(dayIndex, meal){
+    const key = `${dayIndex}-${meal}`;
+    const data = customInputs[key]||{};
+    const name = (data.name||'').trim();
+    const cal = parseInt(data.calories,10);
+    const serving = (data.serving||'').trim();
+    if(!name || !Number.isFinite(cal) || cal <= 0){ return; }
+    const next = JSON.parse(JSON.stringify(days));
+    if(!next[dayIndex][meal]) next[dayIndex][meal] = { name: meal[0].toUpperCase()+meal.slice(1), items:[] };
+    next[dayIndex][meal].items.push({ name, calories: cal, ...(serving?{serving}:{} ) });
+    setDays(next);
+    setCustomInputs(prev=>({ ...prev, [key]: { name:'', calories:'', serving:'' } }));
   }
 
   function handleChatSend(e){
@@ -324,6 +477,18 @@ const NutritionPlanner = () => {
         </button>
 
         <h1 className="title">Weekly Nutrition Planner</h1>
+        <div className="planner-cta-row" style={{marginTop:'.25rem'}}>
+          <div style={{fontWeight:700, marginRight:'.5rem'}}>Plan mode:</div>
+          <button
+            className={`btn ${planMode==='ai'?'btn-primary':'btn-secondary'}`}
+            onClick={()=>{ setPlanMode('ai'); generateMealPlan(); }}
+          >Use AI plan</button>
+          <button
+            className={`btn ${planMode==='custom'?'btn-primary':'btn-secondary'}`}
+            onClick={()=>{ setPlanMode('custom'); clearWeek(); }}
+            style={{marginLeft:'.5rem'}}
+          >Add your own</button>
+        </div>
         <div className="planner-cta-row">
           <button className="btn btn-primary ai-generate" onClick={generateMealPlan}>AI Generate Meal Plan</button>
           <button className="btn btn-accent ai-generate" onClick={generateMealPrep} style={{marginLeft:'.5rem'}}>AI Meal Prep (3 days)</button>
@@ -418,10 +583,37 @@ const NutritionPlanner = () => {
                             <div className="meal-items">
                               {(day.breakfast?.items||[]).map((item, itemIndex) => (
                                 <div key={itemIndex} className="meal-item">
-                                  <span>{item.name}</span>
+                                  <span>{item.name} <span style={{color:'#6b7280'}}>({item.serving || servingFor(item.name)})</span></span>
                                   <span>{item.calories} cal</span>
                                 </div>
                               ))}
+                              <div className="meal-item" style={{gap:'0.5rem', alignItems:'flex-end'}}>
+                                <input
+                                  type="text"
+                                  placeholder="Item name"
+                                  value={(customInputs[`${dayIndex}-breakfast`]||{}).name||''}
+                                  onChange={e=>setCustomField(dayIndex,'breakfast','name',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'40%'}}
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="Calories"
+                                  value={(customInputs[`${dayIndex}-breakfast`]||{}).calories||''}
+                                  onChange={e=>setCustomField(dayIndex,'breakfast','calories',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'25%'}}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Serving"
+                                  value={(customInputs[`${dayIndex}-breakfast`]||{}).serving||''}
+                                  onChange={e=>setCustomField(dayIndex,'breakfast','serving',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'25%'}}
+                                />
+                                <button className="btn-primary" onClick={()=>addCustomItem(dayIndex,'breakfast')}>Add</button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -433,7 +625,7 @@ const NutritionPlanner = () => {
                           >
                             <div className="flex-1">
                               <h3 className="meal-title">Lunch</h3>
-                              <p className="meal-name">{day.lunch.name}</p>
+                              <p className="meal-name">{(day.lunch && day.lunch.name) || 'Lunch'}</p>
                               <p className="meal-calories">
                                 {calculateMealCalories(day.lunch)} cal
                               </p>
@@ -452,12 +644,39 @@ const NutritionPlanner = () => {
 
                           {expandedMeals[`${dayIndex}-lunch`] && (
                             <div className="meal-items">
-                              {day.lunch.items.map((item, itemIndex) => (
+                              {(day.lunch?.items||[]).map((item, itemIndex) => (
                                 <div key={itemIndex} className="meal-item">
-                                  <span>{item.name}</span>
+                                  <span>{item.name} <span style={{color:'#6b7280'}}>({item.serving || servingFor(item.name)})</span></span>
                                   <span>{item.calories} cal</span>
                                 </div>
                               ))}
+                              <div className="meal-item" style={{gap:'0.5rem', alignItems:'flex-end'}}>
+                                <input
+                                  type="text"
+                                  placeholder="Item name"
+                                  value={(customInputs[`${dayIndex}-lunch`]||{}).name||''}
+                                  onChange={e=>setCustomField(dayIndex,'lunch','name',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'40%'}}
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="Calories"
+                                  value={(customInputs[`${dayIndex}-lunch`]||{}).calories||''}
+                                  onChange={e=>setCustomField(dayIndex,'lunch','calories',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'25%'}}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Serving"
+                                  value={(customInputs[`${dayIndex}-lunch`]||{}).serving||''}
+                                  onChange={e=>setCustomField(dayIndex,'lunch','serving',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'25%'}}
+                                />
+                                <button className="btn-primary" onClick={()=>addCustomItem(dayIndex,'lunch')}>Add</button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -470,7 +689,7 @@ const NutritionPlanner = () => {
                           >
                             <div className="flex-1">
                               <h3 className="meal-title">Dinner</h3>
-                              <p className="meal-name">{day.dinner.name}</p>
+                              <p className="meal-name">{(day.dinner && day.dinner.name) || 'Dinner'}</p>
                               <p className="meal-calories">
                                 {calculateMealCalories(day.dinner)} cal
                               </p>
@@ -489,12 +708,39 @@ const NutritionPlanner = () => {
 
                           {expandedMeals[`${dayIndex}-dinner`] && (
                             <div className="meal-items">
-                              {day.dinner.items.map((item, itemIndex) => (
+                              {(day.dinner?.items||[]).map((item, itemIndex) => (
                                 <div key={itemIndex} className="meal-item">
-                                  <span>{item.name}</span>
+                                  <span>{item.name} <span style={{color:'#6b7280'}}>({item.serving || servingFor(item.name)})</span></span>
                                   <span>{item.calories} cal</span>
                                 </div>
                               ))}
+                              <div className="meal-item" style={{gap:'0.5rem', alignItems:'flex-end'}}>
+                                <input
+                                  type="text"
+                                  placeholder="Item name"
+                                  value={(customInputs[`${dayIndex}-dinner`]||{}).name||''}
+                                  onChange={e=>setCustomField(dayIndex,'dinner','name',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'40%'}}
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="Calories"
+                                  value={(customInputs[`${dayIndex}-dinner`]||{}).calories||''}
+                                  onChange={e=>setCustomField(dayIndex,'dinner','calories',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'25%'}}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Serving"
+                                  value={(customInputs[`${dayIndex}-dinner`]||{}).serving||''}
+                                  onChange={e=>setCustomField(dayIndex,'dinner','serving',e.target.value)}
+                                  className="quiz-input"
+                                  style={{maxWidth:'25%'}}
+                                />
+                                <button className="btn-primary" onClick={()=>addCustomItem(dayIndex,'dinner')}>Add</button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -527,47 +773,6 @@ const NutritionPlanner = () => {
       </div>
       )}
     </div>
-  );
-}
-
-function CalorieSummary({ days, mealDoneMap }){
-  const ReactRef = React;
-  const [consumed, setConsumed] = ReactRef.useState(0);
-  const prefs = (()=>{ try{return JSON.parse(localStorage.getItem('nutritionQuiz')||'{}');}catch{return {};}})();
-  const target = prefs?.dailyCalorieLimit || 2000;
-
-  ReactRef.useEffect(()=>{
-    const today = (days && days[0]) ? days[0] : { breakfast:{items:[]}, lunch:{items:[]}, dinner:{items:[]} };
-    const done = mealDoneMap?.[0] || {};
-    const kcal = (arr)=> (arr||[]).reduce((s,i)=> s + (i.calories||0), 0);
-    const total = (done.breakfast? kcal(today.breakfast?.items):0)
-               + (done.lunch? kcal(today.lunch?.items):0)
-               + (done.dinner? kcal(today.dinner?.items):0);
-    setConsumed(total);
-  }, [days, mealDoneMap]);
-
-  const pct = Math.min(100, Math.round((consumed/target)*100));
-  return (
-    <div className="calorie-summary">
-      <div className="calorie-meta">
-        <div className="calorie-title">Today</div>
-        <div className="calorie-numbers"><span className="calorie-consumed">{consumed}</span><span className="calorie-sep">/</span><span className="calorie-target">{target}</span> <span className="calorie-unit">kcal</span></div>
-      </div>
-      <CircularProgress percent={pct} />
-    </div>
-  );
-}
-
-function CircularProgress({ percent=0 }){
-  const r = 32; // smaller radius for compact chart
-  const c = 2 * Math.PI * r;
-  const off = c - (percent/100)*c;
-  return (
-    <svg className="circular" viewBox="0 0 100 100" aria-label={`Progress ${percent}%`}>
-      <circle className="circular-bg" cx="50" cy="50" r={r} />
-      <circle className="circular-fg" cx="50" cy="50" r={r} strokeDasharray={c} strokeDashoffset={off} />
-      <text x="50" y="54" textAnchor="middle" className="circular-text">{percent}%</text>
-    </svg>
   );
 }
 
